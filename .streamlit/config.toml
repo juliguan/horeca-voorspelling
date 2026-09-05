@@ -1,0 +1,12 @@
+[theme]
+base = "dark"
+primaryColor = "#D97757"
+backgroundColor = "#141313"
+secondaryBackgroundColor = "#1D1B1A"
+textColor = "#EDEAE5"
+borderColor = "#302D2B"
+baseRadius = "0.75rem"
+font = "Outfit, sans-serif"
+headingFont = "Outfit, sans-serif"
+headingFontWeights = 650
+metricValueFontWeight = 650

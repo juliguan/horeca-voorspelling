@@ -1,0 +1,23 @@
+item,productcode,verbruik_per_stuk
+Koffie,KOF01,0.0075
+Cappuccino,KOF01,0.0075
+Cappuccino,ZUI01,0.15
+Pils klein,BIER01,0.25
+Pils groot,BIER01,0.5
+Speciaalbier,BIER02,1.0
+Huiswijn wit,WIJN01,0.15
+Huiswijn rood,WIJN02,0.15
+Prosecco,WIJN03,0.15
+Cola,FRIS01,1.0
+Spa rood,FRIS02,1.0
+Jus d'orange,FRIS03,0.25
+Tosti ham-kaas,BROOD01,2.0
+Broodje gezond,BROOD01,2.0
+Uitsmijter,BROOD01,2.0
+Clubsandwich,BROOD01,3.0
+Burger,BROOD02,1.0
+Burger,VLEES01,1.0
+Burger,AARD01,0.14
+Friet,AARD01,0.14
+Steak,AARD01,0.14
+Kipsate,AARD01,0.14

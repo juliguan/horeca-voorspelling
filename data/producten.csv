@@ -1,0 +1,15 @@
+productcode,product,leverancier,besteleenheid,basiseenheid,inhoud_per_besteleenheid,inkoopprijs_per_besteleenheid,houdbaarheid_dagen,leverdagen
+BIER01,Pils fust 50L,Brouwerij Noord,fust,L,50.0,118.0,60,"ma,do"
+BIER02,"Speciaalbier krat 24x0,33",Brouwerij Noord,krat,fles,24.0,38.4,180,"ma,do"
+WIJN01,"Huiswijn wit doos 6x0,75",Wijnhuis Vermeer,doos,L,4.5,41.4,365,di
+WIJN02,"Huiswijn rood doos 6x0,75",Wijnhuis Vermeer,doos,L,4.5,41.4,365,di
+WIJN03,"Prosecco doos 6x0,75",Wijnhuis Vermeer,doos,L,4.5,53.4,365,di
+FRIS01,"Cola krat 24x0,2",Sligro,krat,fles,24.0,18.7,150,"ma,do"
+FRIS02,"Spa rood krat 24x0,2",Sligro,krat,fles,24.0,16.6,150,"ma,do"
+FRIS03,Jus d'orange 6x1L,Sligro,doos,L,6.0,20.9,21,"ma,do"
+KOF01,Koffiebonen doos 4x1kg,Koffiebranderij Alkmaar,doos,kg,4.0,37.6,180,di
+ZUI01,Volle melk 12x1L,Sligro,doos,L,12.0,13.8,12,"ma,do"
+BROOD01,Casinobrood 8 stuks,Bakkerij Zomerdijk,doos,snee,128.0,17.6,3,"ma,di,wo,do,vr,za"
+BROOD02,Burgerbroodjes 4x12,Bakkerij Zomerdijk,doos,stuk,48.0,12.8,4,"ma,wo,vr"
+VLEES01,Burgerpatty 20x150g,Slagerij De Boer,doos,stuk,20.0,47.0,5,"di,vr"
+AARD01,Verse friet 5kg,Sligro,zak,kg,5.0,13.9,8,"ma,do"
