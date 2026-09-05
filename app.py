@@ -11,6 +11,7 @@ Start: streamlit run app.py
 """
 import io
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -94,6 +95,42 @@ kassa_df = read_kassa(kassa_bytes)
 st.sidebar.metric("orderregels ingelezen", f"{len(kassa_df):,}")
 
 
+def build_omzet_chart(chart_df: pd.DataFrame) -> alt.LayerChart:
+    """st.line_chart snapt bij veel dagpunten op een smalle grafiek al bij een
+    piepklein muisbewegingetje meerdere dagen door (elke dag is maar een paar
+    pixels breed). Dit is dezelfde data, maar met een expliciete 'dichtstbijzijnde
+    dag'-selectie (het standaard Altair hover-patroon) zodat de tooltip per
+    dag vastklikt."""
+    wide = chart_df.reset_index()
+    reeksen = [c for c in wide.columns if c != "datum"]
+    long_df = wide.melt("datum", var_name="reeks", value_name="omzet")
+
+    kleuren = alt.Scale(domain=reeksen, range=[NEUTRAL, ACCENT])
+    nearest = alt.selection_point(nearest=True, on="pointermove", fields=["datum"], empty=False)
+
+    lines = alt.Chart(long_df).mark_line().encode(
+        x=alt.X("datum:T", title=None),
+        y=alt.Y("omzet:Q", title="omzet (€)"),
+        color=alt.Color("reeks:N", scale=kleuren, title=None, legend=alt.Legend(orient="bottom")),
+    )
+    # selectors is de brede, onzichtbare hit-detectielaag -- de muis hovert
+    # feitelijk over DEZE laag (niet over de dunne rule-lijn), dus de tooltip
+    # hoort hier, niet op rule.
+    selectors = alt.Chart(wide).mark_point().encode(
+        x="datum:T",
+        opacity=alt.value(0),
+        tooltip=[alt.Tooltip("datum", type="temporal", title="datum", format="%a %d %b %Y")]
+        + [alt.Tooltip(r, type="quantitative", title=r, format=",.0f") for r in reeksen],
+    ).add_params(nearest)
+    points = lines.mark_point(size=45).encode(opacity=alt.condition(nearest, alt.value(1), alt.value(0)))
+    rule = alt.Chart(wide).mark_rule(color=NEUTRAL).encode(
+        x="datum:T",
+        opacity=alt.condition(nearest, alt.value(0.5), alt.value(0)),
+    ).transform_filter(nearest)
+
+    return alt.layer(lines, selectors, points, rule).properties(height=380)
+
+
 def use_uploaded_dagstaat_for_purchasing(df: pd.DataFrame) -> None:
     """purchasing.build_calendar() roept load_dagstaat() intern aan zonder
     argumenten -- dit vervangt die naam in purchasing.py's eigen namespace
@@ -160,10 +197,10 @@ else:
             delta=f"{model_mape - baseline_mape:+.1f} pt",
             delta_color="inverse",
         )
-        st.line_chart(chart_df, color=[NEUTRAL, ACCENT])
+        st.altair_chart(build_omzet_chart(chart_df), width="stretch")
 
     st.caption(f"MAPE-scores op de testperiode (vanaf {TEST_START}):")
-    st.dataframe(board.style.format({"mape": "{:.1f}%", "mae": "{:.0f}", "rmse": "{:.0f}"}), use_container_width=True)
+    st.dataframe(board.style.format({"mape": "{:.1f}%", "mae": "{:.0f}", "rmse": "{:.0f}"}), width="stretch")
 
 st.divider()
 
@@ -282,7 +319,7 @@ else:
             "werkelijk_eenheden": "{:,.0f}", "besteladvies_eenheden": "{:,.0f}", "verschil_eenheden": "{:+,.0f}",
             "werkelijk_euro": "€{:,.0f}", "besteladvies_euro": "€{:,.0f}", "verschil_euro": "€{:+,.0f}",
         }),
-        use_container_width=True,
+        width="stretch",
     )
     with st.container(border=True):
         st.metric(
