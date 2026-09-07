@@ -119,6 +119,14 @@ def cached_geocode(plaats: str) -> dict:
     return geocode(plaats)
 
 
+if locatie:
+    try:
+        _gevonden = cached_geocode(locatie)
+        st.sidebar.caption(f"🌤️ weerlocatie gevonden: {_gevonden['naam']}")
+    except Exception as e:
+        st.sidebar.caption(f"⚠️ locatie niet gevonden: {e}")
+
+
 @st.cache_data(show_spinner="weerdata ophalen...")
 def cached_weather(lat: float, lon: float, start: str, end: str) -> pd.DataFrame:
     return fetch_historical_weather(lat, lon, start, end)
