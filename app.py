@@ -53,7 +53,9 @@ st.caption("Prototype op synthetische kassadata, sep 2023 t/m aug 2026 -- test v
 
 
 # ---------------------------------------------------------------------------
-# Data uploaden (met de synthetische bestanden als default)
+# Data uploaden -- zonder upload staat alles op 0/leeg, pas na uploaden
+# verschijnen de berekeningen. Bestand weer verwijderen (het kruisje in de
+# uploader) zet alles weer terug naar 0.
 # ---------------------------------------------------------------------------
 st.sidebar.header("Data")
 dagstaat_upload = st.sidebar.file_uploader("dagstaat.csv", type="csv")
@@ -63,36 +65,36 @@ dagstaat_bytes = dagstaat_upload.getvalue() if dagstaat_upload is not None else 
 kassa_bytes = kassa_upload.getvalue() if kassa_upload is not None else None
 
 if dagstaat_upload is not None:
-    st.sidebar.caption(f"eigen dagstaat.csv geladen ({dagstaat_upload.size:,} bytes)")
+    st.sidebar.caption(f"dagstaat.csv geladen ({dagstaat_upload.size:,} bytes)")
 else:
-    st.sidebar.caption("standaard (synthetische) dagstaat.csv")
+    st.sidebar.caption("nog geen dagstaat.csv geupload")
 
 if kassa_upload is not None:
-    st.sidebar.caption(f"eigen kassa_orderregels.csv geladen ({kassa_upload.size:,} bytes)")
+    st.sidebar.caption(f"kassa_orderregels.csv geladen ({kassa_upload.size:,} bytes)")
     st.sidebar.caption(
         "let op: het model rekent op dagstaat.csv (en verbruik_theoretisch.csv voor inkoop), "
         "niet rechtstreeks op de kassaregels -- deze upload wordt alleen ingelezen en hieronder getoond."
     )
 else:
-    st.sidebar.caption("standaard (synthetische) kassa_orderregels.csv")
+    st.sidebar.caption("nog geen kassa_orderregels.csv geupload")
 
 
 @st.cache_data(show_spinner="dagstaat.csv inlezen...")
-def read_dagstaat(data: bytes | None) -> pd.DataFrame:
+def read_dagstaat(data: bytes | None) -> pd.DataFrame | None:
     if data is None:
-        return read_dagstaat_csv()
+        return None
     return read_dagstaat_csv(path=io.BytesIO(data))
 
 
 @st.cache_data(show_spinner="kassa_orderregels.csv inlezen...")
-def read_kassa(data: bytes | None) -> pd.DataFrame:
+def read_kassa(data: bytes | None) -> pd.DataFrame | None:
     if data is None:
-        return read_kassa_csv()
+        return None
     return read_kassa_csv(path=io.BytesIO(data))
 
 
 kassa_df = read_kassa(kassa_bytes)
-st.sidebar.metric("orderregels ingelezen", f"{len(kassa_df):,}")
+st.sidebar.metric("orderregels ingelezen", f"{len(kassa_df):,}" if kassa_df is not None else "0")
 
 
 def build_omzet_chart(chart_df: pd.DataFrame) -> alt.LayerChart:
@@ -144,6 +146,8 @@ def use_uploaded_dagstaat_for_purchasing(df: pd.DataFrame) -> None:
 @st.cache_data(show_spinner="omzetmodel trainen en scoren...")
 def compute_omzet(dagstaat_bytes: bytes | None):
     df = read_dagstaat(dagstaat_bytes)
+    if df is None:
+        return None
     df = add_calendar_features(df)
     df = add_event_flags(df)
     df = add_weather_features(df)
@@ -181,7 +185,13 @@ except Exception as e:
     st.error(f"kon de omzetvoorspelling niet berekenen: {e}")
 
 if omzet_result is None:
-    if dagstaat_bytes is not None:
+    if dagstaat_bytes is None:
+        with st.container(border=True):
+            c1, c2 = st.columns(2)
+            c1.metric("MAPE model", "0%")
+            c2.metric("verschil t.o.v. weekdaggemiddelde", "0 pt")
+        st.caption("Upload een dagstaat.csv hierboven om de omzetvoorspelling te zien.")
+    else:
         st.warning(f"geen testdata gevonden vanaf {TEST_START} in de geuploade dagstaat.csv.")
 else:
     chart_df, board = omzet_result
@@ -211,6 +221,8 @@ st.divider()
 @st.cache_data(show_spinner="personeelsvertaling berekenen...")
 def compute_staffing(dagstaat_bytes: bytes | None):
     raw = read_dagstaat(dagstaat_bytes)
+    if raw is None:
+        return None, None
     yearly = (
         raw.assign(jaar=raw["datum"].dt.year)
         .groupby("jaar")[["ingeroosterde_uren", "benodigde_uren_norm"]]
@@ -249,20 +261,27 @@ except Exception as e:
     yearly, staffing_kpis = None, None
     st.error(f"kon de personeelsvertaling niet berekenen: {e}")
 
-if yearly is not None:
-    st.bar_chart(yearly[["ingeroosterde_uren", "benodigde_uren_norm"]], color=[NEUTRAL, ACCENT])
-if staffing_kpis is not None:
+if yearly is None:
     with st.container(border=True):
         c1, c2, c3 = st.columns(3)
-        c1.metric("overbezetting testperiode (huidig rooster)", f"€{staffing_kpis['overbezetting_huidig']:,.0f}")
-        c2.metric("resterend als je het model volgt", f"€{staffing_kpis['overbezetting_model']:,.0f}")
-        c3.metric(
-            "voorkomen door voorspelling",
-            f"€{staffing_kpis['voorkomen']:,.0f}",
-            delta=f"€{staffing_kpis['voorkomen']:,.0f}",
-        )
-elif dagstaat_bytes is not None:
-    st.warning(f"geen testdata gevonden vanaf {TEST_START} om de personeels-KPI's op te berekenen.")
+        c1.metric("overbezetting testperiode (huidig rooster)", "€0")
+        c2.metric("resterend als je het model volgt", "€0")
+        c3.metric("voorkomen door voorspelling", "€0")
+    st.caption("Upload een dagstaat.csv hierboven om deze sectie te zien.")
+else:
+    st.bar_chart(yearly[["ingeroosterde_uren", "benodigde_uren_norm"]], color=[NEUTRAL, ACCENT])
+    if staffing_kpis is not None:
+        with st.container(border=True):
+            c1, c2, c3 = st.columns(3)
+            c1.metric("overbezetting testperiode (huidig rooster)", f"€{staffing_kpis['overbezetting_huidig']:,.0f}")
+            c2.metric("resterend als je het model volgt", f"€{staffing_kpis['overbezetting_model']:,.0f}")
+            c3.metric(
+                "voorkomen door voorspelling",
+                f"€{staffing_kpis['voorkomen']:,.0f}",
+                delta=f"€{staffing_kpis['voorkomen']:,.0f}",
+            )
+    else:
+        st.warning(f"geen testdata gevonden vanaf {TEST_START} om de personeels-KPI's op te berekenen.")
 
 st.divider()
 
@@ -273,6 +292,8 @@ st.divider()
 @st.cache_data(show_spinner="besteladvies per product berekenen (14 modellen)...")
 def compute_purchasing(dagstaat_bytes: bytes | None):
     dagstaat_df = read_dagstaat(dagstaat_bytes)
+    if dagstaat_df is None:
+        return None
     use_uploaded_dagstaat_for_purchasing(dagstaat_df)
 
     producten = load_producten().set_index("productcode")
@@ -296,7 +317,11 @@ except Exception as e:
     st.error(f"kon het besteladvies niet berekenen: {e}")
 
 if inkoop_board is None:
-    if dagstaat_bytes is not None:
+    if dagstaat_bytes is None:
+        with st.container(border=True):
+            st.metric("totaal verschil (advies - werkelijk)", "€0")
+        st.caption("Upload een dagstaat.csv hierboven om het besteladvies te zien.")
+    else:
         st.warning(f"geen testdata gevonden vanaf {TEST_START} om het besteladvies op te berekenen.")
 else:
     show_cols = [
