@@ -24,11 +24,13 @@ vanuit dit bestand, niet de broncode van purchasing.py).
 Start: streamlit run app.py
 """
 import io
+from pathlib import Path
 
 import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
+from PIL import Image
 
 from src.data_loading import (
     load_dagstaat as read_dagstaat_csv,
@@ -51,7 +53,9 @@ import rooster
 ACCENT = "#D97757"   # voorspelling / advies -- wat het model zegt
 NEUTRAL = "#8B8680"  # werkelijk -- wat er echt is gebeurd
 
-st.set_page_config(page_title="Horeca drukte- en inkoopvoorspelling", page_icon="🍽️", layout="wide")
+LOGO_PATH = Path(__file__).parent / "logo_icon.png"
+
+st.set_page_config(page_title="Drukmeter", page_icon=Image.open(LOGO_PATH), layout="wide")
 
 st.markdown(
     """
@@ -61,12 +65,43 @@ st.markdown(
     h1, h2, h3 { letter-spacing: -0.02em; }
     [data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }
     [data-testid="stDataFrame"] * { font-variant-numeric: tabular-nums; }
+
+    @keyframes drukmeter-needle-sweep {
+        0%   { transform: rotate(-70deg); }
+        60%  { transform: rotate(8deg); }
+        100% { transform: rotate(0deg); }
+    }
+    @keyframes drukmeter-fade-in {
+        0%   { opacity: 0; transform: translateY(6px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .drukmeter-header { display: flex; align-items: center; gap: 16px; margin-bottom: 4px; }
+    .drukmeter-needle {
+        transform-origin: 40px 50px;
+        animation: drukmeter-needle-sweep 0.9s cubic-bezier(.2,.8,.2,1) both;
+    }
+    .drukmeter-wordmark {
+        font-size: 2.6rem; font-weight: 650; letter-spacing: -0.02em; color: #EDEAE5;
+        animation: drukmeter-fade-in 0.6s ease-out 0.5s both;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("Horeca drukte- en inkoopvoorspelling")
+st.markdown(
+    """
+    <div class="drukmeter-header">
+      <svg width="56" height="56" viewBox="0 0 80 100">
+        <circle cx="40" cy="50" r="32" fill="none" stroke="#D97757" stroke-width="5"/>
+        <circle cx="40" cy="50" r="5" fill="#D97757"/>
+        <line class="drukmeter-needle" x1="40" y1="50" x2="60" y2="30" stroke="#D97757" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <span class="drukmeter-wordmark">Drukmeter</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 st.caption("Upload je eigen orderregels -- de rest (weer, drukte, inkoop, rooster) volgt daaruit.")
 
 
