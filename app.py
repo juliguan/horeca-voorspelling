@@ -70,12 +70,42 @@ st.title("Horeca drukte- en inkoopvoorspelling")
 st.caption("Upload je eigen orderregels -- de rest (weer, drukte, inkoop, rooster) volgt daaruit.")
 
 
+@st.cache_data(show_spinner="locatie opzoeken...")
+def cached_geocode(plaats: str) -> dict:
+    return geocode(plaats)
+
+
+def render_location_badge(container, gevonden_naam: str | None = None) -> None:
+    """Klein, opvallend chipje i.p.v. een tekstregel die onderaan wegvalt."""
+    if gevonden_naam is not None:
+        kort = gevonden_naam.split(",")[0]
+        kleur, achtergrond, icoon, tekst = "#4CAF50", "rgba(76,175,80,0.15)", "✓", kort
+    else:
+        kleur, achtergrond, icoon, tekst = ACCENT, "rgba(217,119,87,0.15)", "⚠", "locatie niet gevonden"
+
+    container.markdown(
+        f'<div style="display:inline-block; margin-top:-8px; margin-bottom:8px; '
+        f'padding:5px 12px; border-radius:999px; background:{achtergrond}; '
+        f'border:1px solid {kleur}; color:{kleur}; font-size:0.8rem; font-weight:600;">'
+        f'{icoon}&nbsp;&nbsp;{tekst}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Data uploaden -- zonder bestellingen staat alles op 0/leeg.
 # ---------------------------------------------------------------------------
 st.sidebar.header("Data")
 orders_upload = st.sidebar.file_uploader("je orderregels (zoals kassa_orderregels.csv)", type="csv")
 locatie = st.sidebar.text_input("locatie (voor het weer)", value="Cafe Laurierboom, Amsterdam")
+
+if locatie:
+    try:
+        _gevonden = cached_geocode(locatie)
+        render_location_badge(st.sidebar, gevonden_naam=_gevonden["naam"])
+    except Exception:
+        render_location_badge(st.sidebar)
+
 norm_omzet_per_uur = st.sidebar.number_input("omzet-norm per gewerkt uur (€)", min_value=1.0, value=100.0, step=1.0)
 
 st.sidebar.divider()
@@ -114,17 +144,6 @@ def read_inkoop(data: bytes | None) -> pd.DataFrame | None:
     return read_inkoop_csv(path=io.BytesIO(data))
 
 
-@st.cache_data(show_spinner="locatie opzoeken...")
-def cached_geocode(plaats: str) -> dict:
-    return geocode(plaats)
-
-
-if locatie:
-    try:
-        _gevonden = cached_geocode(locatie)
-        st.sidebar.caption(f"🌤️ weerlocatie gevonden: {_gevonden['naam']}")
-    except Exception as e:
-        st.sidebar.caption(f"⚠️ locatie niet gevonden: {e}")
 
 
 @st.cache_data(show_spinner="weerdata ophalen...")
