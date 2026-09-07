@@ -17,6 +17,7 @@ import streamlit as st
 
 from src.data_loading import (
     load_dagstaat as read_dagstaat_csv,
+    load_kassa_orderregels as read_kassa_csv,
     load_producten,
     load_verbruik_theoretisch,
     load_inkoop_historie,
@@ -28,6 +29,7 @@ from src.baselines import predict_weekday_average, predict_same_weekday_n_weeks_
 import model
 import staffing
 import purchasing
+import rooster
 
 ACCENT = "#D97757"   # voorspelling / norm -- wat het model zegt
 NEUTRAL = "#8B8680"  # werkelijk -- wat er echt is gebeurd
@@ -58,13 +60,21 @@ st.caption("Prototype op synthetische kassadata, sep 2023 t/m aug 2026 -- test v
 # ---------------------------------------------------------------------------
 st.sidebar.header("Data")
 dagstaat_upload = st.sidebar.file_uploader("dagstaat.csv", type="csv")
+kassa_upload = st.sidebar.file_uploader("kassa_orderregels.csv", type="csv")
+st.sidebar.caption("kassa_orderregels.csv is alleen nodig voor het roosteradvies per dagdeel (sectie 4) -- de andere secties werken puur op dagstaat.csv.")
 
 dagstaat_bytes = dagstaat_upload.getvalue() if dagstaat_upload is not None else None
+kassa_bytes = kassa_upload.getvalue() if kassa_upload is not None else None
 
 if dagstaat_upload is not None:
     st.sidebar.caption(f"dagstaat.csv geladen ({dagstaat_upload.size:,} bytes)")
 else:
     st.sidebar.caption("nog geen dagstaat.csv geupload")
+
+if kassa_upload is not None:
+    st.sidebar.caption(f"kassa_orderregels.csv geladen ({kassa_upload.size:,} bytes)")
+else:
+    st.sidebar.caption("nog geen kassa_orderregels.csv geupload")
 
 
 @st.cache_data(show_spinner="dagstaat.csv inlezen...")
@@ -72,6 +82,13 @@ def read_dagstaat(data: bytes | None) -> pd.DataFrame | None:
     if data is None:
         return None
     return read_dagstaat_csv(path=io.BytesIO(data))
+
+
+@st.cache_data(show_spinner="kassa_orderregels.csv inlezen...")
+def read_kassa(data: bytes | None) -> pd.DataFrame | None:
+    if data is None:
+        return None
+    return read_kassa_csv(path=io.BytesIO(data))
 
 
 def build_omzet_chart(chart_df: pd.DataFrame) -> alt.LayerChart:
@@ -329,3 +346,61 @@ else:
             f"€{totaal['verschil_euro']:+,.0f}",
             delta=f"€{totaal['verschil_euro']:+,.0f}",
         )
+
+st.divider()
+
+
+# ---------------------------------------------------------------------------
+# Sectie 4 -- roosteradvies per dagdeel (rooster.py)
+# ---------------------------------------------------------------------------
+@st.cache_data(show_spinner="roosteradvies per dagdeel berekenen...")
+def compute_rooster(dagstaat_bytes: bytes | None, kassa_bytes: bytes | None):
+    kassa = read_kassa(kassa_bytes)
+    if kassa is None:
+        return None
+
+    df = read_dagstaat(dagstaat_bytes)
+    if df is None:
+        return None
+    df = add_calendar_features(df)
+    df = add_event_flags(df)
+    df = add_weather_features(df)
+    df = add_lag_features(df, target=model.TARGET)
+    df = add_rolling_features(df, target=model.TARGET)
+
+    train, test = time_split(df, TEST_START)
+    if train.empty or test.empty:
+        return None
+
+    aandeel = rooster.dagdeel_aandeel_per_weekday(kassa, TEST_START)
+    norm = staffing.bepaal_norm_omzet_per_uur(train)
+    omzet_pred = model.predict(train, test, model.TARGET)
+    return rooster.roosteradvies(omzet_pred, test["datum"].reset_index(drop=True), aandeel, norm)
+
+
+st.header("🧑‍🍳 4. Roosteradvies per dagdeel")
+st.caption(
+    "Vereist zowel dagstaat.csv als kassa_orderregels.csv. Puur een advies, geen "
+    "vergelijking met werkelijk -- dagstaat.csv heeft alleen een dagtotaal aan "
+    "ingeroosterde uren, geen uitsplitsing per dagdeel om tegenaan te leggen."
+)
+try:
+    rooster_advies = compute_rooster(dagstaat_bytes, kassa_bytes)
+except Exception as e:
+    rooster_advies = None
+    st.error(f"kon het roosteradvies niet berekenen: {e}")
+
+if rooster_advies is None:
+    with st.container(border=True):
+        st.bar_chart(pd.Series(0, index=rooster.DAGDELEN, name="gemiddeld aantal mensen"), color=ACCENT)
+    if dagstaat_bytes is None or kassa_bytes is None:
+        st.caption("Upload zowel dagstaat.csv als kassa_orderregels.csv hierboven om deze sectie te zien.")
+    else:
+        st.warning(f"geen testdata gevonden vanaf {TEST_START}.")
+else:
+    gemiddeld = rooster_advies[rooster.DAGDELEN].mean()
+    gemiddeld.name = "gemiddeld aantal mensen"
+    with st.container(border=True):
+        st.bar_chart(gemiddeld, color=ACCENT)
+    st.caption(f"roosteradvies per dag, testperiode (vanaf {TEST_START}):")
+    st.dataframe(rooster_advies, width="stretch")
