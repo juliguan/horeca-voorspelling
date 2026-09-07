@@ -17,7 +17,6 @@ import streamlit as st
 
 from src.data_loading import (
     load_dagstaat as read_dagstaat_csv,
-    load_kassa_orderregels as read_kassa_csv,
     load_producten,
     load_verbruik_theoretisch,
     load_inkoop_historie,
@@ -59,24 +58,13 @@ st.caption("Prototype op synthetische kassadata, sep 2023 t/m aug 2026 -- test v
 # ---------------------------------------------------------------------------
 st.sidebar.header("Data")
 dagstaat_upload = st.sidebar.file_uploader("dagstaat.csv", type="csv")
-kassa_upload = st.sidebar.file_uploader("kassa_orderregels.csv", type="csv")
 
 dagstaat_bytes = dagstaat_upload.getvalue() if dagstaat_upload is not None else None
-kassa_bytes = kassa_upload.getvalue() if kassa_upload is not None else None
 
 if dagstaat_upload is not None:
     st.sidebar.caption(f"dagstaat.csv geladen ({dagstaat_upload.size:,} bytes)")
 else:
     st.sidebar.caption("nog geen dagstaat.csv geupload")
-
-if kassa_upload is not None:
-    st.sidebar.caption(f"kassa_orderregels.csv geladen ({kassa_upload.size:,} bytes)")
-    st.sidebar.caption(
-        "let op: het model rekent op dagstaat.csv (en verbruik_theoretisch.csv voor inkoop), "
-        "niet rechtstreeks op de kassaregels -- deze upload wordt alleen ingelezen en hieronder getoond."
-    )
-else:
-    st.sidebar.caption("nog geen kassa_orderregels.csv geupload")
 
 
 @st.cache_data(show_spinner="dagstaat.csv inlezen...")
@@ -84,17 +72,6 @@ def read_dagstaat(data: bytes | None) -> pd.DataFrame | None:
     if data is None:
         return None
     return read_dagstaat_csv(path=io.BytesIO(data))
-
-
-@st.cache_data(show_spinner="kassa_orderregels.csv inlezen...")
-def read_kassa(data: bytes | None) -> pd.DataFrame | None:
-    if data is None:
-        return None
-    return read_kassa_csv(path=io.BytesIO(data))
-
-
-kassa_df = read_kassa(kassa_bytes)
-st.sidebar.metric("orderregels ingelezen", f"{len(kassa_df):,}" if kassa_df is not None else "0")
 
 
 def build_omzet_chart(chart_df: pd.DataFrame) -> alt.LayerChart:
