@@ -55,7 +55,7 @@ NEUTRAL = "#8B8680"  # werkelijk -- wat er echt is gebeurd
 
 LOGO_PATH = Path(__file__).parent / "logo_icon.png"
 
-st.set_page_config(page_title="Drukmeter", page_icon=Image.open(LOGO_PATH), layout="wide")
+st.set_page_config(page_title="Vooruitzicht", page_icon=Image.open(LOGO_PATH), layout="wide")
 
 st.markdown(
     """
@@ -84,6 +84,23 @@ st.markdown(
         font-size: 2.6rem; font-weight: 650; letter-spacing: -0.02em; color: #EDEAE5;
         animation: drukmeter-fade-in 0.6s ease-out 0.5s both;
     }
+
+    /* Uber-achtige micro-interacties: snappy, springy easing i.p.v. lineair,
+       duidelijke druk-feedback, content die rustig infadet i.p.v. abrupt verschijnt. */
+    button, [data-testid="stFileUploaderDropzone"], [data-baseweb="input"], [data-baseweb="base-input"] {
+        transition: transform 0.15s cubic-bezier(.34,1.56,.64,1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    button:active { transform: scale(0.96); }
+    [data-testid="stFileUploaderDropzone"]:hover { border-color: #D97757 !important; }
+    [data-baseweb="input"]:focus-within, [data-baseweb="base-input"]:focus-within {
+        box-shadow: 0 0 0 2px rgba(217,119,87,0.35);
+    }
+    [data-testid="stVerticalBlockBorderWrapper"], [data-testid="stMetric"] {
+        animation: drukmeter-fade-in 0.5s cubic-bezier(.2,.8,.2,1) both;
+    }
+    [data-testid="stAltairChart"], [data-testid="stArrowVegaLiteChart"] {
+        animation: drukmeter-fade-in 0.7s cubic-bezier(.2,.8,.2,1) both;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -97,7 +114,7 @@ st.markdown(
         <circle cx="40" cy="50" r="5" fill="#D97757"/>
         <line class="drukmeter-needle" x1="40" y1="50" x2="60" y2="30" stroke="#D97757" stroke-width="5" stroke-linecap="round"/>
       </svg>
-      <span class="drukmeter-wordmark">Drukmeter</span>
+      <span class="drukmeter-wordmark">Vooruitzicht</span>
     </div>
     """,
     unsafe_allow_html=True,
