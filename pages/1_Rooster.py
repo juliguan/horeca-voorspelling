@@ -17,7 +17,7 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-from src.branding import inject_css, render_header
+from src.branding import inject_css, render_header, render_page_transition, ROOSTER_ICON_SVG
 from src.pipeline import (
     ACCENT, NEUTRAL, LOGO_PATH,
     load_local_events, cached_geocode, render_location_badge,
@@ -28,6 +28,7 @@ import rooster
 
 st.set_page_config(page_title="Rooster · Vooruitzicht", page_icon=Image.open(LOGO_PATH), layout="wide")
 inject_css()
+render_page_transition("Rooster", ROOSTER_ICON_SVG)
 render_header("Vooruitzicht — Rooster")
 st.caption("Eén pagina, puur gericht op personeelsplanning: je orders, het weer en lokale evenementen samen.")
 

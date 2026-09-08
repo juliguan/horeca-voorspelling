@@ -10,3 +10,12 @@ font = "Outfit, sans-serif"
 headingFont = "Outfit, sans-serif"
 headingFontWeights = 650
 metricValueFontWeight = 650
+
+# st.warning/st.error/st.info/st.success gebruikten anders Streamlit's felle
+# standaardkleuren (fel geel/rood/blauw/groen) die tegen ons donkere,
+# ingetogen palet aanknalden -- hier vervangen door gedempte tinten uit
+# dezelfde warme familie als de rest.
+yellowColor = "#D9A757"
+redColor = "#C1584A"
+blueColor = "#7C93A0"
+greenColor = "#6FAF6F"

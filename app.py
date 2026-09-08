@@ -94,11 +94,18 @@ st.markdown(
     /* Opstartscherm, Uber-stijl: effen donker vlak, gecentreerd woordmerk,
        geen spinner -- kort in beeld, dan wegfaden zodat de dashboard eronder
        zichtbaar wordt. pointer-events:none zodat 'ie nooit iets blokkeert. */
-    @keyframes vooruitzicht-splash-fade {
+    /* De achtergrond zelf is METEEN (t=0) volledig ondoorzichtig en blijft
+       dat tot vlak voor het einde -- geen fade-in van het zwarte vlak zelf,
+       want dan schemert de sidebar er in dat eerste fractie-van-een-seconde
+       nog doorheen. Alleen het logo/woord erin krijgt een zachte intro. */
+    @keyframes vooruitzicht-splash-bg {
+        0%   { opacity: 1; }
+        85%  { opacity: 1; }
+        100% { opacity: 0; }
+    }
+    @keyframes vooruitzicht-splash-content-in {
         0%   { opacity: 0; transform: scale(0.92); }
-        18%  { opacity: 1; transform: scale(1); }
-        68%  { opacity: 1; transform: scale(1); }
-        100% { opacity: 0; transform: scale(1); }
+        100% { opacity: 1; transform: scale(1); }
     }
     @keyframes vooruitzicht-splash-needle {
         0%   { transform: rotate(0deg); }
@@ -107,8 +114,12 @@ st.markdown(
     .vooruitzicht-splash {
         position: fixed; inset: 0; z-index: 9999; pointer-events: none;
         background: #141313;
-        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-        animation: vooruitzicht-splash-fade 4.5s cubic-bezier(.2,.8,.2,1) forwards;
+        display: flex; align-items: center; justify-content: center;
+        animation: vooruitzicht-splash-bg 4.5s linear forwards;
+    }
+    .vooruitzicht-splash-content {
+        display: flex; flex-direction: column; align-items: center; gap: 22px;
+        animation: vooruitzicht-splash-content-in 0.6s cubic-bezier(.2,.8,.2,1) both;
     }
     .vooruitzicht-splash-word {
         font-size: 3.4rem; font-weight: 650; letter-spacing: -0.02em; color: #EDEAE5;
@@ -119,12 +130,12 @@ st.markdown(
     }
     /* Streamlit rendert de sidebar in een eigen laag die niet onder de
        fixed overlay hierboven valt -- apart afdekken met een ::before op
-       de sidebar zelf, zelfde animatie/duur zodat het synchroon oogt. */
+       de sidebar zelf, zelfde achtergrond-animatie zodat het synchroon oogt. */
     [data-testid="stSidebar"] { position: relative; }
     [data-testid="stSidebar"]::before {
         content: ""; position: absolute; inset: 0; z-index: 9999; pointer-events: none;
         background: #141313;
-        animation: vooruitzicht-splash-fade 4.5s cubic-bezier(.2,.8,.2,1) forwards;
+        animation: vooruitzicht-splash-bg 4.5s linear forwards;
     }
     </style>
     """,
@@ -134,12 +145,14 @@ st.markdown(
 st.markdown(
     """
     <div class="vooruitzicht-splash">
-      <svg width="88" height="88" viewBox="0 0 120 150">
-        <circle cx="60" cy="75" r="48" fill="none" stroke="#D97757" stroke-width="7"/>
-        <circle cx="60" cy="75" r="7" fill="#D97757"/>
-        <line class="vooruitzicht-splash-needle" x1="60" y1="75" x2="90" y2="45" stroke="#D97757" stroke-width="7" stroke-linecap="round"/>
-      </svg>
-      <span class="vooruitzicht-splash-word">Vooruitzicht</span>
+      <div class="vooruitzicht-splash-content">
+        <svg width="88" height="88" viewBox="0 0 120 150">
+          <circle cx="60" cy="75" r="48" fill="none" stroke="#D97757" stroke-width="7"/>
+          <circle cx="60" cy="75" r="7" fill="#D97757"/>
+          <line class="vooruitzicht-splash-needle" x1="60" y1="75" x2="90" y2="45" stroke="#D97757" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+        <span class="vooruitzicht-splash-word">Vooruitzicht</span>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
