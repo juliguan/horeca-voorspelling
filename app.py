@@ -49,6 +49,7 @@ import model
 import staffing
 import purchasing
 import rooster
+import stockout_detectie
 
 ACCENT = "#D97757"   # voorspelling / advies -- wat het model zegt
 NEUTRAL = "#8B8680"  # werkelijk -- wat er echt is gebeurd
@@ -624,3 +625,66 @@ else:
         st.bar_chart(gemiddeld, color=ACCENT)
     st.caption("roosteradvies per dag, testperiode:")
     st.dataframe(rooster_advies, width="stretch")
+
+st.divider()
+
+
+# ---------------------------------------------------------------------------
+# Sectie 5 -- vermoedelijke nee-verkopen (stockout_detectie.py)
+# ---------------------------------------------------------------------------
+@st.cache_data(show_spinner="vermoedelijke nee-verkopen zoeken...")
+def compute_stockouts(orders_bytes: bytes | None):
+    orders = read_orders(orders_bytes)
+    if orders is None:
+        return None
+    receptuur = load_receptuur()
+    producten = load_producten().set_index("productcode")
+
+    verdacht = stockout_detectie.detecteer_vermoedelijke_stockouts(orders, receptuur)
+    if verdacht.empty:
+        return verdacht, None
+
+    verdacht = verdacht.merge(producten[["product"]], left_on="productcode", right_index=True)
+    samenvatting = (
+        verdacht.groupby(["productcode", "product"])
+        .agg(aantal_keer=("datum", "count"), totaal_misgelopen=("geschatte_misgelopen_omzet", "sum"))
+        .reset_index()
+        .sort_values("totaal_misgelopen", ascending=False)
+    )
+    return verdacht, samenvatting
+
+
+st.header("🚫 5. Vermoedelijke nee-verkopen")
+st.caption(
+    "Heuristiek, geen zekerheid: dagen waarop een product opvallend vroeg stopte met verkopen "
+    "terwijl de zaak die dag verder gemiddeld-tot-druk was -- een teken dat het waarschijnlijk "
+    "vroegtijdig op was. Werkt puur op de orderregels zelf, geen aparte 'uitverkocht'-registratie nodig."
+)
+try:
+    stockout_result = compute_stockouts(orders_bytes)
+except Exception as e:
+    stockout_result = None
+    st.error(f"kon de nee-verkopen niet berekenen: {e}")
+
+if stockout_result is None:
+    with st.container(border=True):
+        st.metric("geschatte misgelopen omzet", "€0")
+    if orders_bytes is None:
+        st.caption("Upload je orderregels hierboven om deze sectie te zien.")
+else:
+    verdacht, samenvatting = stockout_result
+    if samenvatting is None or samenvatting.empty:
+        with st.container(border=True):
+            st.metric("geschatte misgelopen omzet", "€0")
+        st.caption("Geen vermoedelijke nee-verkopen gevonden in deze data.")
+    else:
+        totaal = samenvatting["totaal_misgelopen"].sum()
+        with st.container(border=True):
+            st.metric("geschatte misgelopen omzet (hele periode)", f"€{totaal:,.0f}")
+        st.caption(f"per product, {len(verdacht)} gevlagde momenten in totaal:")
+        st.dataframe(
+            samenvatting.rename(columns={
+                "aantal_keer": "keer gevlagd", "totaal_misgelopen": "geschatte misgelopen omzet",
+            }).style.format({"geschatte misgelopen omzet": "€{:,.0f}"}),
+            width="stretch",
+        )
