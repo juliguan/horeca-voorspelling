@@ -1,11 +1,20 @@
 datum,naam,type,locatie,afstand_schatting
+2026-09-08,Amsterdam Fringe Festival,festival,diverse locaties Amsterdam,stad-breed
+2026-09-09,Amsterdam Fringe Festival,festival,diverse locaties Amsterdam,stad-breed
+2026-09-10,Amsterdam Fringe Festival,festival,diverse locaties Amsterdam,stad-breed
+2026-09-11,Amsterdam Fringe Festival,festival,diverse locaties Amsterdam,stad-breed
+2026-09-12,Amsterdam Fringe Festival,festival,diverse locaties Amsterdam,stad-breed
 2026-09-12,Open Monumentendag,feestdag,Amsterdam (meerdere locaties),stad-breed
+2026-09-13,Amsterdam Fringe Festival,festival,diverse locaties Amsterdam,stad-breed
 2026-09-13,Open Monumentendag,feestdag,Amsterdam (meerdere locaties),stad-breed
 2026-09-19,Dam tot Damloop,overig,Dam Amsterdam tot Zaandam,stad-breed
+2026-09-19,IJ-Hallen,markt,NDSM-werf Amsterdam-Noord,ver weg
 2026-09-20,Dam tot Damloop,overig,Dam Amsterdam tot Zaandam,stad-breed
+2026-09-20,IJ-Hallen,markt,NDSM-werf Amsterdam-Noord,ver weg
 2026-09-26,Ambacht in Beeld,markt,Amsterdam centrum,stad-breed
 2026-09-27,Ambacht in Beeld,markt,Amsterdam centrum,stad-breed
 2026-10-10,IJ-Hallen,markt,NDSM-werf Amsterdam-Noord,ver weg
+2026-10-10,Cinekid,festival,diverse locaties Amsterdam,stad-breed
 2026-10-11,IJ-Hallen,markt,NDSM-werf Amsterdam-Noord,ver weg
 2026-10-15,TCS Amsterdam Marathon Expo,overig,RAI Amsterdam,ver weg
 2026-10-17,Amsterdam Marathon weekend (diverse routes),overig,Olympisch Stadion/Vondelpark/Amstel,stad-breed
@@ -15,3 +24,4 @@ datum,naam,type,locatie,afstand_schatting
 2026-10-23,Amsterdam Dance Event,festival,diverse locaties Amsterdam,stad-breed
 2026-10-24,Amsterdam Dance Event,festival,diverse locaties Amsterdam,stad-breed
 2026-10-25,Amsterdam Dance Event,festival,diverse locaties Amsterdam,stad-breed
+2026-10-25,Cinekid,festival,diverse locaties Amsterdam,stad-breed
