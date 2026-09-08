@@ -61,10 +61,18 @@ def load_local_events() -> pd.DataFrame | None:
     """Lokale evenementen, aangevuld door een terugkerende cloud-taak (elke
     1e/15e van de maand een agent die research doet en dit bestand bijwerkt
     via git). Bestaat het bestand nog niet, dan is er simpelweg nog geen
-    event-signaal -- geen fout."""
+    event-signaal -- geen fout.
+
+    Het bestand wordt geschreven door een geautomatiseerde taak zonder
+    menselijke controle vooraf -- een parsefout hierin mag de rest van de
+    app niet meetrekken, dus dit faalt zacht met een waarschuwing."""
     if not EVENTS_PATH.exists():
         return None
-    ev = pd.read_csv(EVENTS_PATH, parse_dates=["datum"])
+    try:
+        ev = pd.read_csv(EVENTS_PATH, parse_dates=["datum"])
+    except Exception as e:
+        st.sidebar.warning(f"kon events_handmatig.csv niet lezen: {e}")
+        return None
     return ev if not ev.empty else None
 
 LOGO_PATH = Path(__file__).parent / "logo_icon.png"
