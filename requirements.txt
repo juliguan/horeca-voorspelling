@@ -3,3 +3,6 @@ numpy
 scikit-learn
 streamlit
 requests
+fastapi
+uvicorn
+python-multipart
