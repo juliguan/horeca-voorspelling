@@ -519,8 +519,9 @@ def compute_rooster(orders_bytes: bytes | None, locatie: str, norm: float):
         return None
 
     aandeel = rooster.dagdeel_aandeel_per_weekday(orders, test_start)
+    aandeel_per_dag = aandeel.loc[test["datum"].dt.weekday].to_numpy()
     omzet_pred = model.predict(train, test, model.TARGET)
-    return rooster.roosteradvies(omzet_pred, test["datum"].reset_index(drop=True), aandeel, norm)
+    return rooster.roosteradvies(omzet_pred, test["datum"].reset_index(drop=True), aandeel_per_dag, norm)
 
 
 st.header("🧑‍🍳 4. Roosteradvies per dagdeel")

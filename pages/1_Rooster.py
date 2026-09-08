@@ -62,15 +62,17 @@ def compute_rooster_pagina(orders_bytes: bytes | None, locatie: str, norm: float
         return None
 
     aandeel = rooster.dagdeel_aandeel_per_weekday(orders, test_start)
+    aandeel_per_dag = aandeel.loc[test["datum"].dt.weekday].to_numpy()
     omzet_pred = model.predict(train, test, model.TARGET)
-    advies = rooster.roosteradvies(omzet_pred, test["datum"].reset_index(drop=True), aandeel, norm)
+    advies = rooster.roosteradvies(omzet_pred, test["datum"].reset_index(drop=True), aandeel_per_dag, norm)
+    validatie = rooster.evalueer_dagdeel_aanpak(df, orders, test_start)
 
     weer_samenvatting = {
         "gem_temp": test["temp_c"].mean(),
         "regendagen": int((test["neerslag_mm"] > 1.0).sum()),
         "totaal_dagen": len(test),
     }
-    return advies, test["datum"], weer_samenvatting
+    return advies, test["datum"], weer_samenvatting, validatie
 
 
 if orders_bytes is None:
@@ -85,7 +87,7 @@ else:
     if resultaat is None:
         st.warning("te weinig dagen in de upload om een testperiode van te maken.")
     else:
-        advies, test_datums, weer = resultaat
+        advies, test_datums, weer, validatie = resultaat
 
         # -- de 3 signalen zichtbaar maken, niet alleen gebruiken --
         st.subheader("Op basis van 3 signalen samen")
@@ -128,3 +130,14 @@ else:
 
         st.caption("roosteradvies per dag, hele testperiode:")
         st.dataframe(advies, width="stretch")
+
+        st.divider()
+        with st.expander("hoe betrouwbaar is de dagdeel-verdeling? (modelvalidatie)", expanded=False):
+            st.caption(
+                "De verdeling over dagdelen gebruikt nu een vast historisch gemiddelde per weekdag. "
+                "Dat is te toetsen: de werkelijke verdeling per dag is bekend uit de orderregels zelf. "
+                "Onderstaand de gemiddelde afwijking (in procentpunt) t.o.v. die werkelijkheid, tegen "
+                "een model dat de verdeling wél laat meebewegen met weer/evenementen -- op deze data "
+                "wint het vaste gemiddelde nog, dus dat gebruikt het advies hierboven ook."
+            )
+            st.dataframe((validatie * 100).round(2), width="stretch")
