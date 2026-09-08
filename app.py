@@ -54,6 +54,19 @@ import stockout_detectie
 ACCENT = "#D97757"   # voorspelling / advies -- wat het model zegt
 NEUTRAL = "#8B8680"  # werkelijk -- wat er echt is gebeurd
 
+EVENTS_PATH = Path(__file__).parent / "data" / "events_handmatig.csv"
+
+
+def load_local_events() -> pd.DataFrame | None:
+    """Lokale evenementen, aangevuld door een terugkerende cloud-taak (elke
+    1e/15e van de maand een agent die research doet en dit bestand bijwerkt
+    via git). Bestaat het bestand nog niet, dan is er simpelweg nog geen
+    event-signaal -- geen fout."""
+    if not EVENTS_PATH.exists():
+        return None
+    ev = pd.read_csv(EVENTS_PATH, parse_dates=["datum"])
+    return ev if not ev.empty else None
+
 LOGO_PATH = Path(__file__).parent / "logo_icon.png"
 
 st.set_page_config(page_title="Vooruitzicht", page_icon=Image.open(LOGO_PATH), layout="wide")
@@ -172,6 +185,27 @@ st.markdown(
 )
 st.caption("Upload je eigen orderregels -- de rest (weer, drukte, inkoop, rooster) volgt daaruit.")
 
+_events_df = load_local_events()
+if _events_df is not None:
+    _aankomend = _events_df[_events_df["datum"] >= pd.Timestamp.now().normalize()].sort_values("datum")
+    if not _aankomend.empty:
+        _afstand_kleur = {"dichtbij": ACCENT, "stad-breed": NEUTRAL, "ver weg": "#6B6560"}
+        with st.expander(f"📍 {len(_aankomend)} lokale evenementen gevonden (automatisch onderzocht)", expanded=False):
+            st.caption("Wordt gebruikt als event-signaal in de omzetvoorspelling -- elke 1e/15e automatisch bijgewerkt.")
+            for _, _ev in _aankomend.iterrows():
+                _kleur = _afstand_kleur.get(_ev["afstand_schatting"], NEUTRAL)
+                st.markdown(
+                    f'<div style="display:flex; align-items:center; gap:12px; padding:8px 0; '
+                    f'border-bottom:1px solid #302D2B;">'
+                    f'<span style="font-variant-numeric:tabular-nums; color:#8B8680; min-width:90px;">'
+                    f'{_ev["datum"].strftime("%d %b %Y")}</span>'
+                    f'<span style="flex:1;">{_ev["naam"]}</span>'
+                    f'<span style="font-size:0.75rem; color:{_kleur}; border:1px solid {_kleur}; '
+                    f'border-radius:999px; padding:2px 10px;">{_ev["afstand_schatting"]}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
 
 @st.cache_data(show_spinner="locatie opzoeken...")
 def cached_geocode(plaats: str) -> dict:
@@ -256,9 +290,9 @@ def cached_weather(lat: float, lon: float, start: str, end: str) -> pd.DataFrame
 
 @st.cache_data(show_spinner="dagomzet en weer opbouwen...")
 def build_base_df(orders_bytes: bytes | None, locatie: str) -> pd.DataFrame | None:
-    """Orderregels -> dagomzet, aangevuld met opgehaald weer. Dit is de
-    tabel die zowel het omzetmodel als het rooster (via de kalender/weer-
-    kolommen) verder gebruiken."""
+    """Orderregels -> dagomzet, aangevuld met opgehaald weer en lokale
+    evenementen. Dit is de tabel die zowel het omzetmodel als het rooster
+    (via de kalender/weer/event-kolommen) verder gebruiken."""
     orders = read_orders(orders_bytes)
     if orders is None:
         return None
@@ -274,7 +308,13 @@ def build_base_df(orders_bytes: bytes | None, locatie: str) -> pd.DataFrame | No
     # dagen missen dan nog. Vul dat met de laatst bekende waarde in plaats
     # van die dagen helemaal te laten vallen.
     df[["temp_c", "neerslag_mm", "zon_index"]] = df[["temp_c", "neerslag_mm", "zon_index"]].ffill()
-    df["event"] = None
+
+    events = load_local_events()
+    if events is not None:
+        naam_per_datum = events.drop_duplicates("datum").set_index("datum")["naam"]
+        df["event"] = df["datum"].map(naam_per_datum)
+    else:
+        df["event"] = None
     return df
 
 
