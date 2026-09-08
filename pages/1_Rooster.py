@@ -65,14 +65,28 @@ def compute_rooster_pagina(orders_bytes: bytes | None, locatie: str, norm: float
     aandeel_per_dag = aandeel.loc[test["datum"].dt.weekday].to_numpy()
     omzet_pred = model.predict(train, test, model.TARGET)
     advies = rooster.roosteradvies(omzet_pred, test["datum"].reset_index(drop=True), aandeel_per_dag, norm)
-    validatie = rooster.evalueer_dagdeel_aanpak(df, orders, test_start)
 
     weer_samenvatting = {
         "gem_temp": test["temp_c"].mean(),
         "regendagen": int((test["neerslag_mm"] > 1.0).sum()),
         "totaal_dagen": len(test),
     }
-    return advies, test["datum"], weer_samenvatting, validatie
+    return advies, test["datum"], weer_samenvatting
+
+
+@st.cache_data(show_spinner="v1 vs. v2 dagdeel-verdeling vergelijken (traint 5 extra modellen)...")
+def compute_dagdeel_validatie(orders_bytes: bytes | None, locatie: str):
+    """Los van compute_rooster_pagina omdat dit 5 extra modellen traint --
+    dat hoeft niet mee te draaien zolang je alleen het advies wil zien.
+    Vooral relevant geworden nadat dit op het volle 3-jaar-bestand
+    merkbaar trager bleek dan met een klein testbestand."""
+    orders = read_orders(orders_bytes)
+    base = build_base_df(orders_bytes, locatie)
+    if orders is None or base is None:
+        return None
+    df = build_features(base)
+    _, _, test_start = maak_test_split(df)
+    return rooster.evalueer_dagdeel_aanpak(df, orders, test_start)
 
 
 if orders_bytes is None:
@@ -87,7 +101,7 @@ else:
     if resultaat is None:
         st.warning("te weinig dagen in de upload om een testperiode van te maken.")
     else:
-        advies, test_datums, weer, validatie = resultaat
+        advies, test_datums, weer = resultaat
 
         # -- de 3 signalen zichtbaar maken, niet alleen gebruiken --
         st.subheader("Op basis van 3 signalen samen")
@@ -136,8 +150,18 @@ else:
             st.caption(
                 "De verdeling over dagdelen gebruikt nu een vast historisch gemiddelde per weekdag. "
                 "Dat is te toetsen: de werkelijke verdeling per dag is bekend uit de orderregels zelf. "
-                "Onderstaand de gemiddelde afwijking (in procentpunt) t.o.v. die werkelijkheid, tegen "
-                "een model dat de verdeling wél laat meebewegen met weer/evenementen -- op deze data "
-                "wint het vaste gemiddelde nog, dus dat gebruikt het advies hierboven ook."
+                "Traint 5 extra modellen om te vergelijken -- daarom los, niet standaard meegerekend."
             )
-            st.dataframe((validatie * 100).round(2), width="stretch")
+            if st.button("bereken modelvalidatie"):
+                try:
+                    validatie = compute_dagdeel_validatie(orders_bytes, locatie)
+                except Exception as e:
+                    validatie = None
+                    st.error(f"kon de validatie niet berekenen: {e}")
+                if validatie is not None:
+                    st.caption(
+                        "gemiddelde afwijking (in procentpunt) t.o.v. de werkelijke dagdeel-verdeling -- "
+                        "v1 is het vaste weekdaggemiddelde dat het advies hierboven gebruikt, v2 laat de "
+                        "verdeling meebewegen met weer/evenementen:"
+                    )
+                    st.dataframe((validatie * 100).round(2), width="stretch")
