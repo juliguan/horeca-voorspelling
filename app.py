@@ -112,9 +112,8 @@ st.markdown(
         100% { opacity: 0; transform: scale(1); }
     }
     @keyframes vooruitzicht-splash-needle {
-        0%   { transform: rotate(-70deg); }
-        55%  { transform: rotate(8deg); }
-        100% { transform: rotate(0deg); }
+        0%   { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
     .vooruitzicht-splash {
         position: fixed; inset: 0; z-index: 9999; pointer-events: none;
@@ -127,7 +126,7 @@ st.markdown(
     }
     .vooruitzicht-splash-needle {
         transform-origin: 60px 75px;
-        animation: vooruitzicht-splash-needle 1s cubic-bezier(.2,.8,.2,1) both;
+        animation: vooruitzicht-splash-needle 1.1s linear infinite;
     }
     /* Streamlit rendert de sidebar in een eigen laag die niet onder de
        fixed overlay hierboven valt -- apart afdekken met een ::before op
