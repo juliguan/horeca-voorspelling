@@ -120,7 +120,7 @@ st.markdown(
         position: fixed; inset: 0; z-index: 9999; pointer-events: none;
         background: #141313;
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-        animation: vooruitzicht-splash-fade 2s cubic-bezier(.2,.8,.2,1) forwards;
+        animation: vooruitzicht-splash-fade 4.5s cubic-bezier(.2,.8,.2,1) forwards;
     }
     .vooruitzicht-splash-word {
         font-size: 3.4rem; font-weight: 650; letter-spacing: -0.02em; color: #EDEAE5;
@@ -128,6 +128,15 @@ st.markdown(
     .vooruitzicht-splash-needle {
         transform-origin: 60px 75px;
         animation: vooruitzicht-splash-needle 1s cubic-bezier(.2,.8,.2,1) both;
+    }
+    /* Streamlit rendert de sidebar in een eigen laag die niet onder de
+       fixed overlay hierboven valt -- apart afdekken met een ::before op
+       de sidebar zelf, zelfde animatie/duur zodat het synchroon oogt. */
+    [data-testid="stSidebar"] { position: relative; }
+    [data-testid="stSidebar"]::before {
+        content: ""; position: absolute; inset: 0; z-index: 9999; pointer-events: none;
+        background: #141313;
+        animation: vooruitzicht-splash-fade 4.5s cubic-bezier(.2,.8,.2,1) forwards;
     }
     </style>
     """,
