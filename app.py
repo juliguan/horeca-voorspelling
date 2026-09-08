@@ -101,7 +101,49 @@ st.markdown(
     [data-testid="stAltairChart"], [data-testid="stArrowVegaLiteChart"] {
         animation: drukmeter-fade-in 0.7s cubic-bezier(.2,.8,.2,1) both;
     }
+
+    /* Opstartscherm, Uber-stijl: effen donker vlak, gecentreerd woordmerk,
+       geen spinner -- kort in beeld, dan wegfaden zodat de dashboard eronder
+       zichtbaar wordt. pointer-events:none zodat 'ie nooit iets blokkeert. */
+    @keyframes vooruitzicht-splash-fade {
+        0%   { opacity: 0; transform: scale(0.92); }
+        18%  { opacity: 1; transform: scale(1); }
+        68%  { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(1); }
+    }
+    @keyframes vooruitzicht-splash-needle {
+        0%   { transform: rotate(-70deg); }
+        55%  { transform: rotate(8deg); }
+        100% { transform: rotate(0deg); }
+    }
+    .vooruitzicht-splash {
+        position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+        background: #141313;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        animation: vooruitzicht-splash-fade 2s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+    .vooruitzicht-splash-word {
+        font-size: 3.4rem; font-weight: 650; letter-spacing: -0.02em; color: #EDEAE5;
+    }
+    .vooruitzicht-splash-needle {
+        transform-origin: 60px 75px;
+        animation: vooruitzicht-splash-needle 1s cubic-bezier(.2,.8,.2,1) both;
+    }
     </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div class="vooruitzicht-splash">
+      <svg width="88" height="88" viewBox="0 0 120 150">
+        <circle cx="60" cy="75" r="48" fill="none" stroke="#D97757" stroke-width="7"/>
+        <circle cx="60" cy="75" r="7" fill="#D97757"/>
+        <line class="vooruitzicht-splash-needle" x1="60" y1="75" x2="90" y2="45" stroke="#D97757" stroke-width="7" stroke-linecap="round"/>
+      </svg>
+      <span class="vooruitzicht-splash-word">Vooruitzicht</span>
+    </div>
     """,
     unsafe_allow_html=True,
 )
